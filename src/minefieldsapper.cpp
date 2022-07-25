@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <ctime>
 
 LRESULT CALLBACK wProcedure(HWND, UINT, WPARAM, LPARAM);
 void createGame(HWND);
@@ -8,19 +9,32 @@ int space = row*column;
 HWND* grid = new HWND[space];
 int* loc = new int[space];
 
-void locReset(){
-    for(int i = 0; i<space; i++){
-        loc[i] = 0;
-    }
+HMENU hMenu;
+
+int mines = 3;
+int none = space - mines;
+bool fPlay = 0;
+int sLeft = space - mines;
+
+int random(){
+    return (std::rand()%(space-1));
 }
 
-void locSet(){ //just for testing some things
-    
-   void locReset();
+void addMenus(HWND hWnd);
 
-    loc[6] = -1;
-    loc[12] = -1;
-    loc[24] = -1;
+void locSet(WPARAM &wParam){
+    fPlay = 1;
+    void locReset();
+    int place;
+    int mineAmount = mines; //should I verify there are more "space" than "mines"?
+
+    while(mineAmount > 0){
+        place = random();
+        if(place != wParam && loc[place] != -1){
+            loc[place] = -1;
+            mineAmount--;
+        }
+    }
 }
 
 void bDisable(){
@@ -35,39 +49,68 @@ void bEnable(){
     }
 }
 
-void mCount(WPARAM &wParam){
-    int c = 0;
+void locReset(){
+    for(int i = 0; i<space; i++){
+        loc[i] = 0;
+        SetWindowTextW(grid[i], NULL);
+    }
+    fPlay = 0;
+    sLeft = space - mines;
+    bEnable();
+}
+
+void openbutton(WPARAM &wParam){
+    EnableWindow(grid[wParam], 0);
+    int mCount = 0;
+
     int X = wParam / column;
     int Y = wParam % column;
-
-    int temp;
 
     for(int i = (X-1); i<(X+2); i++){
         if(i>-1 && i<row){
             for(int j = (Y-1); j<(Y+2); j++){
-                //temp = grid[i*column + j]
                 if(j>-1 && j<column && loc[i*column+j] == -1){
-                    c++;
+                    mCount++;
                 }
             }
         }
     }
 
-    if(c == 0) SetWindowTextW(grid[wParam], L"0");
-    if(c == 1) SetWindowTextW(grid[wParam], L"1");
-    if(c == 2) SetWindowTextW(grid[wParam], L"2");
-    if(c == 3) SetWindowTextW(grid[wParam], L"3");
-    if(c == 4) SetWindowTextW(grid[wParam], L"4");
-    if(c == 5) SetWindowTextW(grid[wParam], L"5");
-    if(c == 6) SetWindowTextW(grid[wParam], L"6");
-    if(c == 7) SetWindowTextW(grid[wParam], L"7");
-    if(c == 8) SetWindowTextW(grid[wParam], L"8");
-    if(c == 9) SetWindowTextW(grid[wParam], L"9");
+    if(mCount == 0){
+        for(int i = (X-1); i<(X+2); i++){
+            if(i>-1 && i<row){
+                for(int j = (Y-1); j<(Y+2); j++){
+                    if(j>-1 && j<column){
+                        WPARAM temp = i*column+j;
+                        if(IsWindowEnabled(grid[temp])) openbutton(temp);
+                    }
+                }
+            }
+        }
+    }
 
+    if(mCount == 0) SetWindowTextW(grid[wParam], L"0"); //I need to find a better way to do this
+    if(mCount == 1) SetWindowTextW(grid[wParam], L"1");
+    if(mCount == 2) SetWindowTextW(grid[wParam], L"2");
+    if(mCount == 3) SetWindowTextW(grid[wParam], L"3");
+    if(mCount == 4) SetWindowTextW(grid[wParam], L"4");
+    if(mCount == 5) SetWindowTextW(grid[wParam], L"5");
+    if(mCount == 6) SetWindowTextW(grid[wParam], L"6");
+    if(mCount == 7) SetWindowTextW(grid[wParam], L"7");
+    if(mCount == 8) SetWindowTextW(grid[wParam], L"8");
+    if(mCount == 9) SetWindowTextW(grid[wParam], L"9");
+
+    sLeft--;
+
+    if(sLeft == 0){
+        bDisable();
+        MessageBox(NULL, "You Win", "Congratulations!", MB_OK);
+    }
 }
 
-
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR args, int ncmdshow){
+
+    std::srand(std::time(NULL));
 
     WNDCLASSW wc = {0};
 
@@ -90,9 +133,13 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR args, int ncmdsho
 LRESULT CALLBACK wProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
     switch(msg){
     case WM_CREATE:
+        addMenus(hWnd);
         createGame(hWnd);
         break;
     case WM_COMMAND:
+        if(fPlay == 0){
+            locSet(wParam);
+        }
 
         if(loc[wParam] == -1){
             bDisable();
@@ -100,10 +147,10 @@ LRESULT CALLBACK wProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
         }
 
         if(loc[wParam] != -1){
-            EnableWindow(grid[wParam], 0);
-            mCount(wParam);
+            openbutton(wParam);
         }
 
+        if(wParam == 1001) locReset(); //iff fPlay == 1 ?
         break;
     case WM_DESTROY:
         PostQuitMessage(0);
@@ -118,10 +165,15 @@ int size = 35;
 int sz1 = 5;
 int sz2 = 5;
 
+void addMenus(HWND hWnd){
+    hMenu = CreateMenu();
+    AppendMenuW(hMenu, MF_STRING, 1001, L"Reset");
+    SetMenu(hWnd, hMenu);
+}
+
 void createGame(HWND hWnd){
 
     locReset();
-    locSet();
 
     for(int i=0; i<column; i++){
         for(int j=0; j<row; j++){
