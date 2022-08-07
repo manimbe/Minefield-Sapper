@@ -176,7 +176,6 @@ LRESULT CALLBACK wProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
         if(wParam == 1001) locReset();
         if(wParam == 1002 && sConfig == 0){
             displayConfig(hWnd);
-            //EnableMenuItem(hMenu, 1002, MF_DISABLED);
             sConfig = 1;
         }
 
