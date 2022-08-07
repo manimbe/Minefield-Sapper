@@ -15,6 +15,8 @@ HWND hWnd;
 HWND sWnd;
 HWND hApply;
 
+HMENU hMenu;
+
 const int MAX_CAP = 999;
 int row = 5, column = 6;
 int space = row*column;
@@ -157,7 +159,7 @@ LRESULT CALLBACK wProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
         createGame(hWnd);
         break;
     case WM_COMMAND:
-        if(fPlay == 0){
+        if(fPlay == 0 && wParam != 1002){
             locSet(wParam);
         }
 
@@ -165,7 +167,7 @@ LRESULT CALLBACK wProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
             openbutton(wParam);
         }
 
-        if(loc[wParam] == -1 && fPlay != 0){
+        if(loc[wParam] == -1 && fPlay == 1){
             bDisable();
             displayMines();
             MessageBox(NULL, "You Lose", "KABOOM!", MB_OK);
@@ -179,6 +181,8 @@ LRESULT CALLBACK wProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
 
         break;
     case WM_DESTROY:
+        delete[] grid;
+        delete[] loc;
         PostQuitMessage(0);
         break;
     default:
@@ -192,7 +196,7 @@ int sz1 = 5;
 int sz2 = 5;
 
 void addMenus(HWND hWnd){
-    HMENU hMenu = CreateMenu();
+    hMenu = CreateMenu();
 
     AppendMenuW(hMenu, MF_STRING, 1001, L"Reset"); //Define 1001
     SetMenu(hWnd, hMenu);
@@ -217,6 +221,7 @@ LRESULT CALLBACK sProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
     case WM_CLOSE:
         DestroyWindow(sWnd);
         sConfig = 0;
+        //EnableMenuItem(hMenu, 1002, MF_ENABLED);
         break;
     case WM_COMMAND:
         if(wParam == 1003) changeSize();
